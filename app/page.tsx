@@ -50,7 +50,9 @@ export default function Home() {
   const [redoPile, setRedoPile] = useState<number[]>([]);
 
   const reset = useCallback(() => {
-    setTodoPile(cards.map(card => card.id));
+    setTodoPile(cards.map(card => ({ id: card.id, sort: Math.random() }))
+      .sort((a, b) => a.sort - b.sort)
+      .map(({ id }) => id));
     setDonePile([]);
     setRedoPile([]);
   }, [cards])
@@ -66,7 +68,7 @@ export default function Home() {
           if (currentCard === dummyCard) return;
           setDonePile(pile => [...pile, todoPile[index]]);
           setTodoPile(pile => pile.filter(id => id !== todoPile[index]));
-        }}/>
+        }} />
         <div className={`${styles.cardArea} ${flipped ? styles.flipped : ''}`} onClick={() => setFlipped(toggle => !toggle)}>
           <div className={styles.card}>
             {currentCard.front}
@@ -79,7 +81,7 @@ export default function Home() {
           if (currentCard === dummyCard) return;
           setRedoPile(pile => [...pile, todoPile[index]]);
           setTodoPile(pile => pile.filter(id => id !== todoPile[index]));
-        }}/>
+        }} />
         <Settings className={styles.editToggle} onClick={() => setShowSettings(toggle => !toggle)} />
         <RotateCcw className={styles.reset} onClick={reset} />
       </div>
@@ -97,18 +99,18 @@ function EditSection(props: { cards: card[], dispatch: Dispatch<{ type: string; 
     {props.cards.map((card, index) => <Fragment key={index}>
       <div>{card.front}</div>
       <div>{card.back}</div>
-      <XCircle onClick={() => props.dispatch({ type: 'remove', payload: card })}/>
-      </Fragment>)}
-      <input type="text" placeholder="Front" value={newFront} onChange={e => setNewFront(e.target.value)} />
-      <input type="text" placeholder="Back" value={newBack} onChange={e => setNewBack(e.target.value)} />
-      <PlusCircle stroke={newFront === '' || newBack === '' ? 'grey' : 'black'}
+      <XCircle onClick={() => props.dispatch({ type: 'remove', payload: card })} />
+    </Fragment>)}
+    <input type="text" placeholder="Front" value={newFront} onChange={e => setNewFront(e.target.value)} />
+    <input type="text" placeholder="Back" value={newBack} onChange={e => setNewBack(e.target.value)} />
+    <PlusCircle stroke={newFront === '' || newBack === '' ? 'grey' : 'black'}
       onClick={() => {
         if (newFront === '' || newBack === '') return;
-      setNewFront('');
-      setNewBack('');
-      const maxId = props.cards.reduce((max, card) => Math.max(max, card.id), 0);
-      props.dispatch({ type: 'add', payload: { id: maxId + 1, front: newFront, back: newBack } })
-    }} />
+        setNewFront('');
+        setNewBack('');
+        const maxId = props.cards.reduce((max, card) => Math.max(max, card.id), 0);
+        props.dispatch({ type: 'add', payload: { id: maxId + 1, front: newFront, back: newBack } })
+      }} />
   </div>
 }
 
