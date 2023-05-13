@@ -1,8 +1,8 @@
 'use client';
 
-import { Dispatch, use, useCallback, useEffect, useReducer, useState } from 'react';
+import { Dispatch, Fragment, useEffect, useReducer, useState } from 'react';
+import { PlusCircle, Settings, XCircle } from 'react-feather'
 
-import { Settings } from 'react-feather'
 import { openDB } from 'idb';
 import styles from './page.module.css'
 
@@ -16,7 +16,7 @@ function reducer(state: card[], action: { type: string, payload: card }) {
   if (action.type === 'add') {
     return [...state, action.payload];
   } else if (action.type === 'remove') {
-    return state.filter(card => cardMatchBoth(card, actionCard));
+    return state.filter(card => !cardMatchBoth(card, actionCard));
   } else if (action.type === 'edit') {
     const matches = state.filter(card => cardMatchOne(card, actionCard));
     if (matches.length > 1) return [...state, action.payload];
@@ -47,10 +47,10 @@ export default function Home() {
   useEffect(() => {
     const slideInterval = setInterval(() => {
       setIndex(previousIndex => {
-      if (cards.length === 0) return 0;
-      return (previousIndex + 1) % cards.length;
-    });
-  }, 2000);
+        if (cards.length === 0) return 0;
+        return (previousIndex + 1) % cards.length;
+      });
+    }, 2000);
 
     return () => clearInterval(slideInterval);
   }, [cards]);
@@ -60,51 +60,55 @@ export default function Home() {
 
   return (
     <main className={styles.screen}>
-        <div className={styles.cardHolder}>
-          <div className={`${styles.cardArea} ${flipped ? styles.flipped : ''}`} onClick={() => setFlipped(toggle => !toggle)}>
+      <div className={styles.cardHolder}>
+        <div className={`${styles.cardArea} ${flipped ? styles.flipped : ''}`} onClick={() => setFlipped(toggle => !toggle)}>
           <div className={styles.card}>
             {currentCard.front}
-            </div>
+          </div>
           <div className={`${styles.card} ${styles.flipped}`}>
             {currentCard.back}
-            </div>
           </div>
-        <Settings className={styles.editToggle} onClick={() => setShowSettings(toggle => !toggle)}/>
-          </div>
-        { showSettings && <SettingsSection {...{cards, dispatch}} />}
+        </div>
+        <Settings className={styles.editToggle} onClick={() => setShowSettings(toggle => !toggle)} />
+      </div>
+      {showSettings && <SettingsSection {...{ cards, dispatch }} />}
     </main>
   )
 }
 
 
-function SettingsSection(props: { cards: card[], dispatch: Dispatch<{  type: string;  payload: card;}> }) {
-const [newFront, setNewFront] = useState('');
-const [newBack, setNewBack] = useState('');
+function SettingsSection(props: { cards: card[], dispatch: Dispatch<{ type: string; payload: card; }> }) {
+  const [newFront, setNewFront] = useState('');
+  const [newBack, setNewBack] = useState('');
 
   return <div className={styles.editSection}>
-{props.cards.map((card, index) => <div key={index}>{card.front} {card.back}</div>)}
-<div>
-  <input type="text" placeholder="Front" value={newFront} onChange={e => setNewFront(e.target.value)}/>
-  <input type="text" placeholder="Back" value={newBack}onChange={e => setNewBack(e.target.value)}/>
-</div>
-<button onClick={() => {
-  setNewFront('');
-  setNewBack('');
-  props.dispatch({ type: 'add', payload: { front: newFront, back: newBack } })
-}}>
-  Add Card
-  </button>
+    {props.cards.map((card, index) => <Fragment key={index}>
+      <div>{card.front}</div>
+      <div>{card.back}</div>
+      <XCircle onClick={() => props.dispatch({ type: 'remove', payload: card })}/>
+      </Fragment>)}
+      <input type="text" placeholder="Front" value={newFront} onChange={e => setNewFront(e.target.value)} />
+      <input type="text" placeholder="Back" value={newBack} onChange={e => setNewBack(e.target.value)} />
+      <PlusCircle stroke={newFront === '' || newBack === '' ? 'grey' : 'black'}
+      onClick={() => {
+        if (newFront === '' || newBack === '') return;
+      setNewFront('');
+      setNewBack('');
+      props.dispatch({ type: 'add', payload: { front: newFront, back: newBack } })
+    }} />
   </div>
 }
 
 async function idbTesting() {
-  const db = await openDB('testDB', 1, {upgrade(db) {
-    db.createObjectStore('testStore', { autoIncrement: true });
-  }});
+  const db = await openDB('testDB', 1, {
+    upgrade(db) {
+      db.createObjectStore('testStore', { autoIncrement: true });
+    }
+  });
   console.log(db);
   console.log(await db.getAllKeys('testStore'));
   // const getResult = await db.get('testStore', 'testKey');
   // console.log(getResult);
-    const addResult = await db.add('testStore', 'testValue');
-    console.log(addResult);  
+  const addResult = await db.add('testStore', 'testValue');
+  console.log(addResult);
 }

@@ -18,6 +18,25 @@
 .editSection {
   background-color: white;
   padding: 1rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  grid-auto-rows: max-content;
+  gap: 1rem;
+  align-items: center;
+}
+
+.editSection div {
+  border: 1px solid #ddd;
+  padding: 0.5rem;
+}
+
+.editSection input {
+  padding: 0.5rem;
+}
+
+.editSection button {
+  grid-column: span 2;
+  padding: 0.5rem;
 }
 
 .cardHolder {
