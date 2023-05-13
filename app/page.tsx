@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle, PlusCircle, RotateCcw, Settings, XCircle } from 'react-feather'
+import { CheckCircle, PlusCircle, RefreshCcw, Rewind, Settings, XCircle } from 'react-feather'
 import { Dispatch, Fragment, useCallback, useEffect, useReducer, useState } from 'react';
 
 import { openDB } from 'idb';
@@ -64,11 +64,13 @@ export default function Home() {
   return (
     <main className={styles.screen}>
       <div className={styles.cardHolder}>
-        <CheckCircle onClick={() => {
-          if (currentCard === dummyCard) return;
-          setDonePile(pile => [...pile, todoPile[index]]);
-          setTodoPile(pile => pile.filter(id => id !== todoPile[index]));
-        }} />
+        <div title='Correct'>
+          <CheckCircle onClick={() => {
+            if (currentCard === dummyCard) return;
+            setDonePile(pile => [...pile, todoPile[index]]);
+            setTodoPile(pile => pile.filter(id => id !== todoPile[index]));
+          }} />
+        </div>
         <div className={`${styles.cardArea} ${flipped ? styles.flipped : ''}`} onClick={() => setFlipped(toggle => !toggle)}>
           <div className={styles.card}>
             {currentCard.front}
@@ -77,13 +79,28 @@ export default function Home() {
             {currentCard.back}
           </div>
         </div>
-        <XCircle onClick={() => {
-          if (currentCard === dummyCard) return;
-          setRedoPile(pile => [...pile, todoPile[index]]);
-          setTodoPile(pile => pile.filter(id => id !== todoPile[index]));
-        }} />
-        <Settings className={styles.editToggle} onClick={() => setShowSettings(toggle => !toggle)} />
-        <RotateCcw className={styles.reset} onClick={reset} />
+        <div title='Incorrect'>
+          <XCircle onClick={() => {
+            if (currentCard === dummyCard) return;
+            setRedoPile(pile => [...pile, todoPile[index]]);
+            setTodoPile(pile => pile.filter(id => id !== todoPile[index]));
+          }} />
+        </div>
+        <div title='Edit Cards'>
+          <Settings className={styles.editToggle} onClick={() => setShowSettings(toggle => !toggle)} />
+        </div>
+        <div title='Reset and Shuffle Cards'>
+          <RefreshCcw className={styles.reset} onClick={reset} />
+        </div>
+        <div title='Retry Incorrect Cards'>
+          <Rewind className={styles.retry} onClick={() => {
+            setTodoPile(pile => [...pile, ...redoPile]);
+            setRedoPile([]);
+          }} />
+        </div>
+        <div className={styles.todoCount}>Not Tested: {todoPile.length}</div>
+        <div className={styles.doneCount}>Correct: {donePile.length}</div>
+        <div className={styles.redoCount}>Incorrect: {redoPile.length}</div>
       </div>
       {showSettings && <EditSection {...{ cards, dispatch }} />}
     </main>
@@ -97,35 +114,34 @@ function EditSection(props: { cards: card[], dispatch: Dispatch<{ type: string; 
 
   return <div className={styles.editSection}>
     {props.cards.map((card, index) => <Fragment key={index}>
-      <div>{card.front}</div>
-      <div>{card.back}</div>
-      <XCircle onClick={() => props.dispatch({ type: 'remove', payload: card })} />
+      <div className={styles.sideText}>{card.front}</div>
+      <div className={styles.sideText}>{card.back}</div>
+      <div title='Delete Card'>
+        <XCircle onClick={() => props.dispatch({ type: 'remove', payload: card })} />
+      </div>
     </Fragment>)}
     <input type="text" placeholder="Front" value={newFront} onChange={e => setNewFront(e.target.value)} />
     <input type="text" placeholder="Back" value={newBack} onChange={e => setNewBack(e.target.value)} />
-    <PlusCircle stroke={newFront === '' || newBack === '' ? 'grey' : 'black'}
-      onClick={() => {
-        if (newFront === '' || newBack === '') return;
-        setNewFront('');
-        setNewBack('');
-        const maxId = props.cards.reduce((max, card) => Math.max(max, card.id), 0);
-        props.dispatch({ type: 'add', payload: { id: maxId + 1, front: newFront, back: newBack } })
-      }} />
+    <div title='Add Card'>
+      <PlusCircle stroke={newFront === '' || newBack === '' ? 'grey' : 'black'}
+        onClick={() => {
+          if (newFront === '' || newBack === '') return;
+          setNewFront('');
+          setNewBack('');
+          const maxId = props.cards.reduce((max, card) => Math.max(max, card.id), 0);
+          props.dispatch({ type: 'add', payload: { id: maxId + 1, front: newFront, back: newBack } })
+        }} />
+    </div>
   </div>
 }
 
 // Minimum Viable Product
-// go through cards manually
 // edit cards
 // save on page reload
 // multiline text input
-// card order up and down
-// randomize card order
 
 // Extras
 // card collections/groups
-// wrong pile for second run
-// end of cards, reset run
 
 async function idbTesting() {
   const db = await openDB('testDB', 1, {
