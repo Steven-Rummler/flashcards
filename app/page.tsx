@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle, PlusCircle, RefreshCcw, Rewind, Settings, XCircle } from 'react-feather'
+import { CheckCircle, PlusCircle, RefreshCcw, Rewind, Save, Settings, XCircle } from 'react-feather'
 import { Dispatch, Fragment, useCallback, useEffect, useReducer, useState } from 'react';
 
 import { openDB } from 'idb';
@@ -14,27 +14,10 @@ type card = {
 
 function reducer(state: card[], action: { type: string, payload: card }) {
   const actionCard = action.payload;
-  if (action.type === 'add') {
-    return [...state, action.payload];
-  } else if (action.type === 'remove') {
-    return state.filter(card => !cardMatchBoth(card, actionCard));
-  } else if (action.type === 'edit') {
-    const matches = state.filter(card => cardMatchOne(card, actionCard));
-    if (matches.length > 1) return [...state, action.payload];
-    else if (matches.length === 1) return state.map(card => cardMatchOne(card, actionCard) ? actionCard : card);
-  }
+  if (action.type === 'add') return [...state, action.payload];
+  else if (action.type === 'remove') return state.filter(card => card.id !== actionCard.id);
+  else if (action.type === 'edit') return state.map(card => card.id === actionCard.id ? actionCard : card);
   return state;
-}
-
-function cardMatchBoth(a: card, b: card) {
-  return a.front === b.front && a.back === b.back;
-}
-
-function cardMatchOne(a: card, b: card) {
-  const or = a.front === b.front || a.back === b.back;
-  const and = a.front === b.front && a.back === b.back;
-  const xor = or && !and;
-  return !xor;
 }
 
 const dummyCard = { front: 'Empty', back: 'Empty' };
@@ -113,13 +96,7 @@ function EditSection(props: { cards: card[], dispatch: Dispatch<{ type: string; 
   const [newBack, setNewBack] = useState('');
 
   return <div className={styles.editSection}>
-    {props.cards.map((card, index) => <Fragment key={index}>
-      <div className={styles.sideText}>{card.front}</div>
-      <div className={styles.sideText}>{card.back}</div>
-      <div title='Delete Card'>
-        <XCircle onClick={() => props.dispatch({ type: 'remove', payload: card })} />
-      </div>
-    </Fragment>)}
+    {props.cards.map((card, index) => <CardRow key={card.id} {...{ card, dispatch: props.dispatch }} />)}
     <input type="text" placeholder="Front" value={newFront} onChange={e => setNewFront(e.target.value)} />
     <input type="text" placeholder="Back" value={newBack} onChange={e => setNewBack(e.target.value)} />
     <div title='Add Card'>
@@ -135,8 +112,36 @@ function EditSection(props: { cards: card[], dispatch: Dispatch<{ type: string; 
   </div>
 }
 
+function CardRow(props: { card: card, dispatch: Dispatch<{ type: string; payload: card; }> }) {
+  const [editing, setEditing] = useState(false);
+  const [newFront, setNewFront] = useState(props.card.front);
+  const [newBack, setNewBack] = useState(props.card.back);
+
+  if (editing) return <>
+    <input type="text" placeholder="Front" value={newFront} onChange={e => setNewFront(e.target.value)} />
+    <input type="text" placeholder="Back" value={newBack} onChange={e => setNewBack(e.target.value)} />
+    <div title='Save Changes' onClick={() => {
+      setEditing(false);
+      props.dispatch({ type: 'edit', payload: { id: props.card.id, front: newFront, back: newBack } })
+    }}>
+      <Save />
+    </div>
+  </>;
+
+  return <>
+    <div className={styles.sideText} onClick={() => setEditing(true)}>
+      {props.card.front}
+    </div>
+    <div className={styles.sideText} onClick={() => setEditing(true)}>
+      {props.card.back}
+    </div>
+    <div title='Delete Card' onClick={() => props.dispatch({ type: 'remove', payload: props.card })}>
+      <XCircle />
+    </div>
+  </>;
+}
+
 // Minimum Viable Product
-// edit cards
 // save on page reload
 // multiline text input
 
