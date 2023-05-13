@@ -15,6 +15,13 @@
   cursor: pointer;
 }
 
+.reset {
+  position: fixed;
+  top: calc(1rem + 32px);
+  right: 1rem;
+  cursor: pointer;
+}
+
 .editSection {
   background-color: white;
   padding: 1rem;
@@ -46,6 +53,7 @@
   align-items: center;
   justify-content: center;
   perspective: 1000px;
+  gap: 2rem;
 }
 
 .cardArea {

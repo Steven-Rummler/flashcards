@@ -1,12 +1,13 @@
 'use client';
 
-import { Dispatch, Fragment, useEffect, useReducer, useState } from 'react';
-import { PlusCircle, Settings, XCircle } from 'react-feather'
+import { CheckCircle, PlusCircle, RotateCcw, Settings, XCircle } from 'react-feather'
+import { Dispatch, Fragment, useCallback, useEffect, useReducer, useState } from 'react';
 
 import { openDB } from 'idb';
 import styles from './page.module.css'
 
 type card = {
+  id: number,
   front: string,
   back: string,
 }
@@ -36,7 +37,7 @@ function cardMatchOne(a: card, b: card) {
   return !xor;
 }
 
-const dummyCard = { front: 'Front', back: 'Back' };
+const dummyCard = { front: 'Empty', back: 'Empty' };
 
 export default function Home() {
   const [showSettings, setShowSettings] = useState(false);
@@ -44,23 +45,28 @@ export default function Home() {
   const [index, setIndex] = useState(0);
   const [cards, dispatch] = useReducer(reducer, []);
 
-  useEffect(() => {
-    const slideInterval = setInterval(() => {
-      setIndex(previousIndex => {
-        if (cards.length === 0) return 0;
-        return (previousIndex + 1) % cards.length;
-      });
-    }, 2000);
+  const [todoPile, setTodoPile] = useState<number[]>([]);
+  const [donePile, setDonePile] = useState<number[]>([]);
+  const [redoPile, setRedoPile] = useState<number[]>([]);
 
-    return () => clearInterval(slideInterval);
-  }, [cards]);
+  const reset = useCallback(() => {
+    setTodoPile(cards.map(card => card.id));
+    setDonePile([]);
+    setRedoPile([]);
+  }, [cards])
 
+  useEffect(reset, [reset]);
 
-  const currentCard = cards[index] || dummyCard;
+  const currentCard = cards.find(card => card.id === todoPile[index]) ?? dummyCard;
 
   return (
     <main className={styles.screen}>
       <div className={styles.cardHolder}>
+        <CheckCircle onClick={() => {
+          if (currentCard === dummyCard) return;
+          setDonePile(pile => [...pile, todoPile[index]]);
+          setTodoPile(pile => pile.filter(id => id !== todoPile[index]));
+        }}/>
         <div className={`${styles.cardArea} ${flipped ? styles.flipped : ''}`} onClick={() => setFlipped(toggle => !toggle)}>
           <div className={styles.card}>
             {currentCard.front}
@@ -69,15 +75,21 @@ export default function Home() {
             {currentCard.back}
           </div>
         </div>
+        <XCircle onClick={() => {
+          if (currentCard === dummyCard) return;
+          setRedoPile(pile => [...pile, todoPile[index]]);
+          setTodoPile(pile => pile.filter(id => id !== todoPile[index]));
+        }}/>
         <Settings className={styles.editToggle} onClick={() => setShowSettings(toggle => !toggle)} />
+        <RotateCcw className={styles.reset} onClick={reset} />
       </div>
-      {showSettings && <SettingsSection {...{ cards, dispatch }} />}
+      {showSettings && <EditSection {...{ cards, dispatch }} />}
     </main>
   )
 }
 
 
-function SettingsSection(props: { cards: card[], dispatch: Dispatch<{ type: string; payload: card; }> }) {
+function EditSection(props: { cards: card[], dispatch: Dispatch<{ type: string; payload: card; }> }) {
   const [newFront, setNewFront] = useState('');
   const [newBack, setNewBack] = useState('');
 
@@ -94,10 +106,24 @@ function SettingsSection(props: { cards: card[], dispatch: Dispatch<{ type: stri
         if (newFront === '' || newBack === '') return;
       setNewFront('');
       setNewBack('');
-      props.dispatch({ type: 'add', payload: { front: newFront, back: newBack } })
+      const maxId = props.cards.reduce((max, card) => Math.max(max, card.id), 0);
+      props.dispatch({ type: 'add', payload: { id: maxId + 1, front: newFront, back: newBack } })
     }} />
   </div>
 }
+
+// Minimum Viable Product
+// go through cards manually
+// edit cards
+// save on page reload
+// multiline text input
+// card order up and down
+// randomize card order
+
+// Extras
+// card collections/groups
+// wrong pile for second run
+// end of cards, reset run
 
 async function idbTesting() {
   const db = await openDB('testDB', 1, {
