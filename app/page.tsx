@@ -97,8 +97,14 @@ function EditSection(props: { cards: card[], dispatch: Dispatch<{ type: string; 
 
   return <div className={styles.editSection}>
     {props.cards.map((card, index) => <CardRow key={card.id} {...{ card, dispatch: props.dispatch }} />)}
-    <input type="text" placeholder="Front" value={newFront} onChange={e => setNewFront(e.target.value)} />
-    <input type="text" placeholder="Back" value={newBack} onChange={e => setNewBack(e.target.value)} />
+    <textarea placeholder="Front"
+      rows={newFront.split('\n').length}
+      value={newFront}
+      onChange={e => setNewFront(e.target.value)} />
+    <textarea placeholder="Back"
+      rows={newBack.split('\n').length}
+      value={newBack}
+      onChange={e => setNewBack(e.target.value)} />
     <div title='Add Card'>
       <PlusCircle stroke={newFront === '' || newBack === '' ? 'grey' : 'black'}
         onClick={() => {
@@ -118,8 +124,14 @@ function CardRow(props: { card: card, dispatch: Dispatch<{ type: string; payload
   const [newBack, setNewBack] = useState(props.card.back);
 
   if (editing) return <>
-    <input type="text" placeholder="Front" value={newFront} onChange={e => setNewFront(e.target.value)} />
-    <input type="text" placeholder="Back" value={newBack} onChange={e => setNewBack(e.target.value)} />
+    <textarea placeholder="Front"
+      rows={newFront.split('\n').length}
+      value={newFront}
+      onChange={e => setNewFront(e.target.value)} />
+    <textarea placeholder="Back"
+      rows={newBack.split('\n').length}
+      value={newBack}
+      onChange={e => setNewBack(e.target.value)} />
     <div title='Save Changes' onClick={() => {
       setEditing(false);
       props.dispatch({ type: 'edit', payload: { id: props.card.id, front: newFront, back: newBack } })
@@ -143,7 +155,6 @@ function CardRow(props: { card: card, dispatch: Dispatch<{ type: string; payload
 
 // Minimum Viable Product
 // save on page reload
-// multiline text input
 
 // Extras
 // card collections/groups
