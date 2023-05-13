@@ -42,6 +42,13 @@ export default function Home() {
 
   useEffect(reset, [reset]);
 
+  useEffect(() => {
+    pullFromBrowser().then(cards => {
+      for (const card of cards) dispatch({ type: 'add', payload: card });
+    });
+  }, []);
+  useEffect(() => { syncToBrowser(cards); }, [cards]);
+
   const currentCard = cards.find(card => card.id === todoPile[index]) ?? dummyCard;
 
   return (
@@ -153,22 +160,25 @@ function CardRow(props: { card: card, dispatch: Dispatch<{ type: string; payload
   </>;
 }
 
-// Minimum Viable Product
-// save on page reload
-
-// Extras
-// card collections/groups
-
-async function idbTesting() {
-  const db = await openDB('testDB', 1, {
+function getDB() {
+  return openDB('db', 1, {
     upgrade(db) {
-      db.createObjectStore('testStore', { autoIncrement: true });
+      db.createObjectStore('cards', { keyPath: 'id' });
     }
   });
-  console.log(db);
-  console.log(await db.getAllKeys('testStore'));
-  // const getResult = await db.get('testStore', 'testKey');
-  // console.log(getResult);
-  const addResult = await db.add('testStore', 'testValue');
-  console.log(addResult);
+}
+
+async function pullFromBrowser() {
+  const db = await getDB();
+  return await db.getAll('cards');
+}
+
+async function syncToBrowser(cards: card[]) {
+  const db = await getDB();
+  const transaction = db.transaction('cards', 'readwrite');
+  transaction.objectStore('cards').clear();
+  for (const card of cards) {
+    transaction.objectStore('cards').add(card);
+  }
+  await transaction.done;
 }
