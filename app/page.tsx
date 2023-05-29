@@ -61,6 +61,7 @@ export default function Home() {
     setTodoPile(selectedCards.map(card => ({ id: card.id, sort: Math.random() }))
       .sort((a, b) => a.sort - b.sort)
       .map(({ id }) => id));
+    setFlipped(false);
     setDonePile([]);
     setRedoPile([]);
   }, [selectedCards])
@@ -82,6 +83,7 @@ export default function Home() {
         <div title='Correct'>
           <CheckCircle onClick={() => {
             if (currentCard === dummyCard) return;
+            setFlipped(false);
             setDonePile(pile => [...pile, todoPile[0]]);
             setTodoPile(pile => pile.filter(id => id !== todoPile[0]));
           }} />
@@ -97,6 +99,7 @@ export default function Home() {
         <div title='Incorrect'>
           <XCircle onClick={() => {
             if (currentCard === dummyCard) return;
+            setFlipped(false);
             setRedoPile(pile => [...pile, todoPile[0]]);
             setTodoPile(pile => pile.filter(id => id !== todoPile[0]));
           }} />
@@ -109,6 +112,7 @@ export default function Home() {
         </div>
         <div title='Retry Incorrect Cards'>
           <Rewind className={styles.retry} onClick={() => {
+            setFlipped(false);
             setTodoPile(pile => [...pile, ...redoPile]);
             setRedoPile([]);
           }} />
