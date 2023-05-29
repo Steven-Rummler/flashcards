@@ -49,6 +49,20 @@
   text-align: center;
 }
 
+.stackName {
+  grid-column: span 3;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.stackName h2 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
 .editSection textarea {
   padding: 0.5rem;
   resize: none;

@@ -1,15 +1,16 @@
 'use client';
 
-import { CheckCircle, PlusCircle, RefreshCcw, Rewind, Save, Settings, XCircle } from 'react-feather'
-import { Dispatch, Fragment, useCallback, useEffect, useReducer, useState } from 'react';
+import { CheckCircle, Edit, PlusCircle, RefreshCcw, Rewind, Save, Settings, XCircle } from 'react-feather'
+import { Dispatch, Fragment, useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 
 import { openDB } from 'idb';
 import styles from './page.module.css'
 
 type card = {
-  id: number,
-  front: string,
-  back: string,
+  id: number;
+  front: string;
+  back: string;
+  stack: string;
 }
 
 function reducer(state: card[], action: { type: string, payload: card }) {
@@ -97,13 +98,36 @@ export default function Home() {
   )
 }
 
-
 function EditSection(props: { cards: card[], dispatch: Dispatch<{ type: string; payload: card; }> }) {
+  const [newStack, setNewStack] = useState('');
+  const stacks = useMemo(() => [...new Set(props.cards.map(card => card.stack))], [props.cards]);
+
+  return <>
+    {stacks.map(stack => <EditStack
+      key={stack}
+      stack={stack}
+      cards={props.cards.filter(card => card.stack === stack)}
+      dispatch={props.dispatch}
+    />)}
+    <EditStack
+      stack={'New Stack'}
+      cards={[]}
+      dispatch={props.dispatch}
+    />
+  </>;
+}
+
+
+function EditStack(props: { stack: string, cards: card[], dispatch: Dispatch<{ type: string; payload: card; }> }) {
   const [newFront, setNewFront] = useState('');
   const [newBack, setNewBack] = useState('');
 
   return <div className={styles.editSection}>
-    {props.cards.map((card, index) => <CardRow key={card.id} {...{ card, dispatch: props.dispatch }} />)}
+    <div className={styles.stackName}>
+      <h2>{props.stack}</h2>
+      <Edit />
+    </div>
+    {props.cards.map(card => <CardRow key={card.id} {...{ card, dispatch: props.dispatch }} />)}
     <textarea placeholder="Front"
       rows={newFront.split('\n').length}
       value={newFront}
@@ -119,7 +143,7 @@ function EditSection(props: { cards: card[], dispatch: Dispatch<{ type: string; 
           setNewFront('');
           setNewBack('');
           const maxId = props.cards.reduce((max, card) => Math.max(max, card.id), 0);
-          props.dispatch({ type: 'add', payload: { id: maxId + 1, front: newFront, back: newBack } })
+          props.dispatch({ type: 'add', payload: { id: maxId + 1, front: newFront, back: newBack, stack: props.stack } })
         }} />
     </div>
   </div>
@@ -141,7 +165,7 @@ function CardRow(props: { card: card, dispatch: Dispatch<{ type: string; payload
       onChange={e => setNewBack(e.target.value)} />
     <div title='Save Changes' onClick={() => {
       setEditing(false);
-      props.dispatch({ type: 'edit', payload: { id: props.card.id, front: newFront, back: newBack } })
+      props.dispatch({ type: 'edit', payload: { ...props.card, front: newFront, back: newBack } })
     }}>
       <Save />
     </div>
@@ -161,9 +185,16 @@ function CardRow(props: { card: card, dispatch: Dispatch<{ type: string; payload
 }
 
 function getDB() {
-  return openDB('db', 1, {
-    upgrade(db) {
-      db.createObjectStore('cards', { keyPath: 'id' });
+  return openDB('db', 2, {
+    async upgrade(db, oldVersion) {
+      if (oldVersion < 1) db.createObjectStore('cards', { keyPath: 'id' });
+      const transaction = db.transaction('cards', 'readwrite');
+      let cursor = await transaction.objectStore('cards').openCursor();
+      while (cursor) {
+        cursor.update({ ...cursor.value, stack: 'Stack 1' });
+        cursor = await cursor.continue();
+      }
+      await transaction.done;
     }
   });
 }
