@@ -124,18 +124,20 @@ function EditSection(props: { cards: card[], dispatch: Dispatch<action> }) {
       key={stack}
       stack={stack}
       cards={props.cards.filter(card => card.stack === stack)}
+      allCards={props.cards}
       dispatch={props.dispatch}
     />)}
     <EditStack
       stack={'New Stack'}
       cards={[]}
+      allCards={props.cards}
       dispatch={props.dispatch}
     />
   </div>;
 }
 
 
-function EditStack(props: { stack: string, cards: card[], dispatch: Dispatch<action> }) {
+function EditStack(props: { stack: string, cards: card[], allCards: card[], dispatch: Dispatch<action> }) {
   const [editStack, setEditStack] = useState(false);
   const [newStack, setNewStack] = useState(props.stack === 'New Stack' ? '' : props.stack);
 
@@ -178,7 +180,7 @@ function EditStack(props: { stack: string, cards: card[], dispatch: Dispatch<act
           if (newFront === '' || newBack === '') return;
           setNewFront('');
           setNewBack('');
-          const maxId = props.cards.reduce((max, card) => Math.max(max, card.id), 0);
+          const maxId = props.allCards.reduce((max, card) => Math.max(max, card.id), 0);
           props.dispatch({ type: 'add', payload: { id: maxId + 1, front: newFront, back: newBack, stack } })
         }} />
     </div>
