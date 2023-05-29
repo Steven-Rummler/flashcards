@@ -1,7 +1,7 @@
 'use client';
 
 import { CheckCircle, Edit, PlusCircle, RefreshCcw, Rewind, Save, Settings, XCircle } from 'react-feather'
-import { Dispatch, Fragment, useCallback, useEffect, useMemo, useReducer, useState } from 'react';
+import { Dispatch, useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 
 import { openDB } from 'idb';
 import styles from './page.module.css'
@@ -13,11 +13,29 @@ type card = {
   stack: string;
 }
 
-function reducer(state: card[], action: { type: string, payload: card }) {
-  const actionCard = action.payload;
-  if (action.type === 'add') return [...state, action.payload];
-  else if (action.type === 'remove') return state.filter(card => card.id !== actionCard.id);
-  else if (action.type === 'edit') return state.map(card => card.id === actionCard.id ? actionCard : card);
+type cardAction = {
+  type: 'add' | 'remove' | 'edit';
+  payload: card;
+}
+
+type stackAction = {
+  type: 'rename';
+  payload: { oldName: string, newName: string };
+}
+
+type action = cardAction | stackAction;
+
+function reducer(state: card[], action: action) {
+  if (action.type === 'add')
+    return [...state, action.payload];
+  else if (action.type === 'remove')
+    return state.filter(card => card.id !== action.payload.id);
+  else if (action.type === 'edit')
+    return state.map(card => card.id === action.payload.id ? action.payload : card);
+  else if (action.type === 'rename') {
+    const { oldName, newName } = action.payload;
+    return state.map(card => card.stack === oldName ? { ...card, stack: newName } : card);
+  }
   return state;
 }
 
@@ -98,11 +116,10 @@ export default function Home() {
   )
 }
 
-function EditSection(props: { cards: card[], dispatch: Dispatch<{ type: string; payload: card; }> }) {
-  const [newStack, setNewStack] = useState('');
+function EditSection(props: { cards: card[], dispatch: Dispatch<action> }) {
   const stacks = useMemo(() => [...new Set(props.cards.map(card => card.stack))], [props.cards]);
 
-  return <>
+  return <div className={styles.editSection}>
     {stacks.map(stack => <EditStack
       key={stack}
       stack={stack}
@@ -114,20 +131,38 @@ function EditSection(props: { cards: card[], dispatch: Dispatch<{ type: string; 
       cards={[]}
       dispatch={props.dispatch}
     />
-  </>;
+  </div>;
 }
 
 
-function EditStack(props: { stack: string, cards: card[], dispatch: Dispatch<{ type: string; payload: card; }> }) {
+function EditStack(props: { stack: string, cards: card[], dispatch: Dispatch<action> }) {
+  const [editStack, setEditStack] = useState(false);
+  const [newStack, setNewStack] = useState(props.stack === 'New Stack' ? '' : props.stack);
+
   const [newFront, setNewFront] = useState('');
   const [newBack, setNewBack] = useState('');
 
-  return <div className={styles.editSection}>
+  const stack = props.stack === 'New Stack' && newStack !== '' ? newStack : props.stack;
+
+  return <>
     <div className={styles.stackName}>
-      <h2>{props.stack}</h2>
-      <Edit />
+      {editStack ?
+        <textarea placeholder="Stack Name"
+          rows={newStack.split('\n').length}
+          value={newStack}
+          onChange={e => setNewStack(e.target.value)} /> :
+        <h2>{stack}</h2>}
+      {editStack ?
+        <Save
+          stroke={newStack === '' ? 'grey' : 'black'}
+          onClick={() => {
+            if (props.cards.length > 0) props.dispatch({ type: 'rename', payload: { oldName: props.stack, newName: newStack } });
+            setEditStack(false);
+          }}
+        /> :
+        <Edit onClick={() => setEditStack(true)} />}
     </div>
-    {props.cards.map(card => <CardRow key={card.id} {...{ card, dispatch: props.dispatch }} />)}
+    {props.cards.map(card => <CardRow key={card.id} {...{ card: { ...card, stack }, dispatch: props.dispatch }} />)}
     <textarea placeholder="Front"
       rows={newFront.split('\n').length}
       value={newFront}
@@ -137,19 +172,20 @@ function EditStack(props: { stack: string, cards: card[], dispatch: Dispatch<{ t
       value={newBack}
       onChange={e => setNewBack(e.target.value)} />
     <div title='Add Card'>
-      <PlusCircle stroke={newFront === '' || newBack === '' ? 'grey' : 'black'}
+      <PlusCircle
+        stroke={newFront === '' || newBack === '' ? 'grey' : 'black'}
         onClick={() => {
           if (newFront === '' || newBack === '') return;
           setNewFront('');
           setNewBack('');
           const maxId = props.cards.reduce((max, card) => Math.max(max, card.id), 0);
-          props.dispatch({ type: 'add', payload: { id: maxId + 1, front: newFront, back: newBack, stack: props.stack } })
+          props.dispatch({ type: 'add', payload: { id: maxId + 1, front: newFront, back: newBack, stack } })
         }} />
     </div>
-  </div>
+  </>
 }
 
-function CardRow(props: { card: card, dispatch: Dispatch<{ type: string; payload: card; }> }) {
+function CardRow(props: { card: card, dispatch: Dispatch<action> }) {
   const [editing, setEditing] = useState(false);
   const [newFront, setNewFront] = useState(props.card.front);
   const [newBack, setNewBack] = useState(props.card.back);
