@@ -49,6 +49,7 @@ export default function Home() {
   const stacks = useMemo(() => [...new Set(cards.map(card => card.stack))], [cards]);
   const [selectedStacks, setSelectedStacks] = useState(stacks);
   useEffect(() => { if (selectedStacks.length === 0) setSelectedStacks(stacks); }, [stacks, selectedStacks]);
+  useEffect(() => { if (selectedStacks.some(selectedStack => !stacks.includes(selectedStack))) setSelectedStacks(stacks); }, [stacks, selectedStacks]);
   const selectedCards = useMemo(() => cards.filter(card => selectedStacks.includes(card.stack)), [cards, selectedStacks]);
 
   const [todoPile, setTodoPile] = useState<number[]>([]);
