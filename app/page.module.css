@@ -32,6 +32,12 @@
   right: 1rem;
 }
 
+.download {
+  position: fixed;
+  top: calc(4rem + 96px);
+  right: 1rem;
+}
+
 .editSection {
   background-color: white;
   padding: 1rem;

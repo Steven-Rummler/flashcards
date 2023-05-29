@@ -1,8 +1,9 @@
 'use client';
 
-import { CheckCircle, Circle, Edit, PlusCircle, RefreshCcw, Rewind, Save, Settings, XCircle } from 'react-feather'
+import { CheckCircle, Circle, Download, Edit, PlusCircle, RefreshCcw, Rewind, Save, Settings, XCircle } from 'react-feather'
 import { Dispatch, Fragment, useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 
+import { CSVLink } from 'react-csv';
 import { openDB } from 'idb';
 import styles from './page.module.css'
 
@@ -111,6 +112,11 @@ export default function Home() {
             setTodoPile(pile => [...pile, ...redoPile]);
             setRedoPile([]);
           }} />
+        </div>
+        <div title='Download CSV' className={styles.download}>
+          <CSVLink data={cards.map(card => [card.front, card.back, card.stack])} filename='cards.csv'>
+            <Download stroke={cards.length > 0 ? 'black' : 'grey'} />
+          </CSVLink>
         </div>
         <div className={styles.todoCount}>Not Tested: {todoPile.length}</div>
         <div className={styles.doneCount}>Correct: {donePile.length}</div>
