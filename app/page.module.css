@@ -131,3 +131,19 @@
   right: 1rem;
   user-select: none;
 }
+
+.stackSelector {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+
+  display: grid;
+  grid-template-columns: auto auto;
+
+  row-gap: calc(32px - 2rem);
+  column-gap: 1rem;
+  grid-auto-rows: max-content;
+  align-items: center;
+
+  user-select: none;
+}

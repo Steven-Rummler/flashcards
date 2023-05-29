@@ -1,7 +1,7 @@
 'use client';
 
-import { CheckCircle, Edit, PlusCircle, RefreshCcw, Rewind, Save, Settings, XCircle } from 'react-feather'
-import { Dispatch, useCallback, useEffect, useMemo, useReducer, useState } from 'react';
+import { CheckCircle, Circle, Edit, PlusCircle, RefreshCcw, Rewind, Save, Settings, XCircle } from 'react-feather'
+import { Dispatch, Fragment, useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 
 import { openDB } from 'idb';
 import styles from './page.module.css'
@@ -44,20 +44,24 @@ const dummyCard = { front: 'Empty', back: 'Empty' };
 export default function Home() {
   const [showSettings, setShowSettings] = useState(false);
   const [flipped, setFlipped] = useState(false);
-  const [index, setIndex] = useState(0);
   const [cards, dispatch] = useReducer(reducer, []);
+
+  const stacks = useMemo(() => [...new Set(cards.map(card => card.stack))], [cards]);
+  const [selectedStacks, setSelectedStacks] = useState(stacks);
+  useEffect(() => { if (selectedStacks.length === 0) setSelectedStacks(stacks); }, [stacks, selectedStacks]);
+  const selectedCards = useMemo(() => cards.filter(card => selectedStacks.includes(card.stack)), [cards, selectedStacks]);
 
   const [todoPile, setTodoPile] = useState<number[]>([]);
   const [donePile, setDonePile] = useState<number[]>([]);
   const [redoPile, setRedoPile] = useState<number[]>([]);
 
   const reset = useCallback(() => {
-    setTodoPile(cards.map(card => ({ id: card.id, sort: Math.random() }))
+    setTodoPile(selectedCards.map(card => ({ id: card.id, sort: Math.random() }))
       .sort((a, b) => a.sort - b.sort)
       .map(({ id }) => id));
     setDonePile([]);
     setRedoPile([]);
-  }, [cards])
+  }, [selectedCards])
 
   useEffect(reset, [reset]);
 
@@ -68,7 +72,7 @@ export default function Home() {
   }, []);
   useEffect(() => { syncToBrowser(cards); }, [cards]);
 
-  const currentCard = cards.find(card => card.id === todoPile[index]) ?? dummyCard;
+  const currentCard = selectedCards.find(card => card.id === todoPile[0]) ?? dummyCard;
 
   return (
     <main className={styles.screen}>
@@ -76,8 +80,8 @@ export default function Home() {
         <div title='Correct'>
           <CheckCircle onClick={() => {
             if (currentCard === dummyCard) return;
-            setDonePile(pile => [...pile, todoPile[index]]);
-            setTodoPile(pile => pile.filter(id => id !== todoPile[index]));
+            setDonePile(pile => [...pile, todoPile[0]]);
+            setTodoPile(pile => pile.filter(id => id !== todoPile[0]));
           }} />
         </div>
         <div className={`${styles.cardArea} ${flipped ? styles.flipped : ''}`} onClick={() => setFlipped(toggle => !toggle)}>
@@ -91,8 +95,8 @@ export default function Home() {
         <div title='Incorrect'>
           <XCircle onClick={() => {
             if (currentCard === dummyCard) return;
-            setRedoPile(pile => [...pile, todoPile[index]]);
-            setTodoPile(pile => pile.filter(id => id !== todoPile[index]));
+            setRedoPile(pile => [...pile, todoPile[0]]);
+            setTodoPile(pile => pile.filter(id => id !== todoPile[0]));
           }} />
         </div>
         <div title='Edit Cards'>
@@ -110,6 +114,19 @@ export default function Home() {
         <div className={styles.todoCount}>Not Tested: {todoPile.length}</div>
         <div className={styles.doneCount}>Correct: {donePile.length}</div>
         <div className={styles.redoCount}>Incorrect: {redoPile.length}</div>
+        <div className={styles.stackSelector}>
+          {stacks.map(stack => <Fragment key={stack}>
+            {selectedStacks.includes(stack) ?
+              <CheckCircle
+                stroke={selectedStacks.length === 1 ? 'grey' : 'black'}
+                onClick={() => {
+                  if (selectedStacks.length === 1) return;
+                  setSelectedStacks(selectedStacks => selectedStacks.filter(selectedStack => selectedStack !== stack))
+                }} /> :
+              <Circle onClick={() => setSelectedStacks(selectedStacks => [...selectedStacks, stack])} />}
+            {stack}
+          </Fragment>)}
+        </div>
       </div>
       {showSettings && <EditSection {...{ cards, dispatch }} />}
     </main>
@@ -182,6 +199,7 @@ function EditStack(props: { stack: string, cards: card[], allCards: card[], disp
           setNewBack('');
           const maxId = props.allCards.reduce((max, card) => Math.max(max, card.id), 0);
           props.dispatch({ type: 'add', payload: { id: maxId + 1, front: newFront, back: newBack, stack } })
+          if (props.stack !== newStack) setNewStack('');
         }} />
     </div>
   </>
