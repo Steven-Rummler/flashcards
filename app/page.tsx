@@ -77,6 +77,13 @@ export default function Home() {
 
   const currentCard = selectedCards.find(card => card.id === todoPile[0]) ?? dummyCard;
 
+  const data: [string, string, string][] = [
+    ['Stack', 'Front', 'Back'],
+    ...cards
+      .map((card): [string, string, string] => [card.stack, card.front, card.back])
+      .sort(sortRows)
+  ];
+
   return (
     <main className={styles.screen}>
       <div className={styles.cardHolder}>
@@ -118,7 +125,7 @@ export default function Home() {
           }} />
         </div>
         <div title='Download CSV' className={styles.download}>
-          <CSVLink data={cards.map(card => [card.front, card.back, card.stack])} filename='cards.csv'>
+          <CSVLink data={data} filename='cards.csv'>
             <Download stroke={cards.length > 0 ? 'black' : 'grey'} />
           </CSVLink>
         </div>
@@ -142,6 +149,22 @@ export default function Home() {
       {showSettings && <EditSection {...{ cards, dispatch }} />}
     </main>
   )
+}
+
+function sortCards(card1: card, card2: card) {
+  if (card1.stack < card2.stack) return -1;
+  if (card1.stack > card2.stack) return 1;
+  if (card1.front < card2.front) return -1;
+  if (card1.front > card2.front) return 1;
+  return 0;
+}
+
+function sortRows(card1: [string, string, string], card2: [string, string, string]) {
+  if (card1[0] < card2[0]) return -1;
+  if (card1[0] > card2[0]) return 1;
+  if (card1[1] < card2[1]) return -1;
+  if (card1[1] > card2[1]) return 1;
+  return 0;
 }
 
 function EditSection(props: { cards: card[], dispatch: Dispatch<action> }) {
